@@ -1,6 +1,7 @@
 package com.flatesc.gameoflife.data
 
 import android.os.SystemClock
+import com.flatesc.gameoflife.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
@@ -12,10 +13,13 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.shareIn
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class TickSource(scope: CoroutineScope) {
+@Singleton
+class TickSource @Inject constructor(@ApplicationScope scope: CoroutineScope) {
     private val rateMs = MutableStateFlow(INITIAL_RATE_MS)
 
     // to overflow Long with 1 tick/ms it would take about 292 million years
