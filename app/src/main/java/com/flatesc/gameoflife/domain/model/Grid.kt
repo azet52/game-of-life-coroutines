@@ -1,16 +1,24 @@
 package com.flatesc.gameoflife.domain.model
 
+import java.util.Random
 import kotlin.math.sqrt
 
 class Grid(private val cells: ByteArray) {
 
     val size: Int = sqrt(cells.size.toDouble()).toInt()
 
+    val population: Int get() = cells.count { it == ALIVE }
+
     fun getCell(x: Int, y: Int): Boolean = cells[y * size + x] == ALIVE
 
     companion object {
         const val ALIVE: Byte = 1
         const val DEAD: Byte = 0
+
+        fun fromSeed(seed: String, size: Int): Grid {
+            val random = Random(seed.hashCode().toLong())
+            return Grid(ByteArray(size * size) { if (random.nextBoolean()) ALIVE else DEAD })
+        }
     }
 }
 
