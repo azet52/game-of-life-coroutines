@@ -21,6 +21,10 @@ class SimulationRepository @Inject constructor(private val tickSource: TickSourc
     private val _stats = MutableStateFlow(Stats(generation = 0, population = 0))
     val stats: StateFlow<Stats> = _stats.asStateFlow()
 
+    val tickRateMs: StateFlow<Int> = tickSource.rate
+
+    fun setTickRate(rateMs: Int) = tickSource.overclock(rateMs)
+
     suspend fun run(seed: String, size: Int = DEFAULT_SIZE) = withContext(Dispatchers.Default) {
         var generation = 0L
         var grid = Grid.fromSeed(seed, size)

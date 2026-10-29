@@ -32,6 +32,8 @@ class SimulationViewModel @Inject constructor(
 
     val stats: StateFlow<SimulationRepository.Stats> = repository.stats
 
+    val tickRateMs: StateFlow<Int> = repository.tickRateMs
+
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
@@ -41,6 +43,7 @@ class SimulationViewModel @Inject constructor(
         when (event) {
             is SimulationEvent.Start -> start(event.seed)
             SimulationEvent.Stop -> stop()
+            is SimulationEvent.SetTickRate -> repository.setTickRate(event.rateMs)
         }
     }
 

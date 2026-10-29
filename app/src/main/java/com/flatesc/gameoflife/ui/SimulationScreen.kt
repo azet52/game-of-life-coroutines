@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,11 +37,13 @@ fun SimulationView(
 ) {
     val gridImage by viewModel.gridImage.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val tickRateMs by viewModel.tickRateMs.collectAsStateWithLifecycle()
     val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
 
     SimulationScreen(
         gridImage = gridImage,
         stats = stats,
+        tickRateMs = tickRateMs,
         isRunning = isRunning,
         onEvent = viewModel::onEvent,
         modifier = modifier,
@@ -51,6 +54,7 @@ fun SimulationView(
 fun SimulationScreen(
     gridImage: ImageBitmap?,
     stats: Stats,
+    tickRateMs: Int,
     isRunning: Boolean,
     onEvent: (SimulationEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -85,6 +89,12 @@ fun SimulationScreen(
                 Text(if (isRunning) "Stop" else "Start")
             }
         }
+        Text("Tick: $tickRateMs ms")
+        Slider(
+            value = tickRateMs.toFloat(),
+            onValueChange = { onEvent(SimulationEvent.SetTickRate(it.toInt())) },
+            valueRange = MIN_TICK_RATE_MS..MAX_TICK_RATE_MS,
+        )
     }
 }
 
@@ -117,3 +127,6 @@ private fun GridCanvas(image: ImageBitmap, modifier: Modifier = Modifier) {
         )
     }
 }
+
+private const val MIN_TICK_RATE_MS = 1f
+private const val MAX_TICK_RATE_MS = 1000f
