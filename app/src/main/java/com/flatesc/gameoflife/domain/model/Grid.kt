@@ -1,5 +1,8 @@
 package com.flatesc.gameoflife.domain.model
 
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import java.util.Random
 import kotlin.math.sqrt
 
@@ -22,14 +25,19 @@ class Grid(private val cells: ByteArray) {
     }
 }
 
-fun Grid.next(): Grid {
-    val out = ByteArray(size * size) { index ->
-        val y = index / size
-        val x = index % size
-        val isAlive = applyRules(x, y)
-        if (isAlive) Grid.ALIVE else Grid.DEAD
-    }
-    return Grid(out)
+suspend fun Grid.next(chunks: Int = 1): Grid = coroutineScope {
+    val out = ByteArray(size * size)
+    val rowsPerChunk = (size + chunks - 1) / chunks
+    (0 until size step rowsPerChunk).map { startRow ->
+        launch {
+            for (y in startRow until minOf(startRow + rowsPerChunk, size)) {
+                for (x in 0 until size) {
+                    out[y * size + x] = if (applyRules(x, y)) Grid.ALIVE else Grid.DEAD
+                }
+            }
+        }
+    }.joinAll()
+    Grid(out)
 }
 
 // live cells with two or three neighbors stay alive, otherwise die

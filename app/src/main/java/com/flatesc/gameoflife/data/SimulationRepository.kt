@@ -25,7 +25,9 @@ class SimulationRepository @Inject constructor(private val tickSource: TickSourc
 
     fun setTickRate(rateMs: Int) = tickSource.overclock(rateMs)
 
-    suspend fun run(seed: String, size: Int = DEFAULT_SIZE) = withContext(Dispatchers.Default) {
+    suspend fun run(seed: String, size: Int, parallelism: Int) = withContext(
+        Dispatchers.Default.limitedParallelism(parallelism)
+    ) {
         var generation = 0L
         var grid = Grid.fromSeed(seed, size)
 
@@ -38,15 +40,11 @@ class SimulationRepository @Inject constructor(private val tickSource: TickSourc
             val dropped = lastTick?.let { tick - it - 1 } ?: 0
             lastTick = tick
 
-            grid = grid.next()
+            grid = grid.next(chunks = parallelism)
 
             generation++
             _grid.value = grid
             _stats.value = Stats(generation, grid.population, dropped)
         }
-    }
-
-    companion object {
-        private const val DEFAULT_SIZE = 128
     }
 }

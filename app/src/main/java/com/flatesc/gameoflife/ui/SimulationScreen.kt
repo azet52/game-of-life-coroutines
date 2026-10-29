@@ -67,6 +67,7 @@ fun SimulationScreen(
     var seed by remember { mutableStateOf("") }
     var sizeIndex by remember { mutableIntStateOf(GRID_SIZES.indexOf(DEFAULT_GRID_SIZE)) }
     val size = GRID_SIZES[sizeIndex]
+    var parallelism by remember { mutableIntStateOf(MIN_PARALLELISM) }
 
     Column(
         modifier = modifier.padding(16.dp),
@@ -93,7 +94,7 @@ fun SimulationScreen(
                 label = { Text("Seed") },
                 singleLine = true,
             )
-            Button(onClick = { onEvent(if (isRunning) SimulationEvent.Stop else SimulationEvent.Start(seed, size)) }) {
+            Button(onClick = { onEvent(if (isRunning) SimulationEvent.Stop else SimulationEvent.Start(seed, size, parallelism)) }) {
                 Text(if (isRunning) "Stop" else "Start")
             }
         }
@@ -119,6 +120,20 @@ fun SimulationScreen(
                 onValueChange = { sizeIndex = it.roundToInt() },
                 valueRange = 0f..GRID_SIZES.lastIndex.toFloat(),
                 steps = GRID_SIZES.size - 2,
+                enabled = !isRunning,
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Parallelism: $parallelism")
+            Slider(
+                modifier = Modifier.weight(1f),
+                value = parallelism.toFloat(),
+                onValueChange = { parallelism = it.roundToInt() },
+                valueRange = MIN_PARALLELISM.toFloat()..MAX_PARALLELISM.toFloat(),
+                steps = MAX_PARALLELISM - MIN_PARALLELISM - 1,
                 enabled = !isRunning,
             )
         }
@@ -167,3 +182,6 @@ private const val MAX_TICK_RATE_MS = 1000f
 
 private val GRID_SIZES = listOf(16, 32, 64, 128, 256, 512, 1024, 2048)
 private const val DEFAULT_GRID_SIZE = 128
+
+private const val MIN_PARALLELISM = 1
+private const val MAX_PARALLELISM = 4
