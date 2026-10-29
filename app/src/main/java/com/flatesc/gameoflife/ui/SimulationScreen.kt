@@ -15,6 +15,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,6 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flatesc.gameoflife.data.SimulationRepository.Stats
+import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.roundToInt
 
 @Composable
 fun SimulationView(
@@ -60,6 +64,8 @@ fun SimulationScreen(
     modifier: Modifier = Modifier,
 ) {
     var seed by remember { mutableStateOf("") }
+    var sizeIndex by remember { mutableIntStateOf(GRID_SIZES.indexOf(DEFAULT_GRID_SIZE)) }
+    val size = GRID_SIZES[sizeIndex]
 
     Column(
         modifier = modifier.padding(16.dp),
@@ -70,37 +76,57 @@ fun SimulationScreen(
         } else {
             TitlePlaceholder(Modifier.fillMaxWidth())
         }
-        Row(Modifier.fillMaxWidth()) {
-            Stat("Generation", stats.generation.toString(), Modifier.weight(1f))
-            Stat("Population", stats.population.toString(), Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Stat("Generation", stats.generation.toString())
+            Stat("Population", stats.population.toString())
+            Stat("Tick loss", stats.dropped.toString())
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
+                modifier = Modifier.weight(1f),
                 value = seed,
                 onValueChange = { seed = it },
                 label = { Text("Seed") },
                 singleLine = true,
-                modifier = Modifier.weight(1f),
             )
-            Button(onClick = { onEvent(if (isRunning) SimulationEvent.Stop else SimulationEvent.Start(seed)) }) {
+            Button(onClick = { onEvent(if (isRunning) SimulationEvent.Stop else SimulationEvent.Start(seed, size)) }) {
                 Text(if (isRunning) "Stop" else "Start")
             }
         }
-        Text("Tick: $tickRateMs ms")
-        Slider(
-            value = tickRateMs.toFloat(),
-            onValueChange = { onEvent(SimulationEvent.SetTickRate(it.toInt())) },
-            valueRange = MIN_TICK_RATE_MS..MAX_TICK_RATE_MS,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Tick: $tickRateMs ms")
+            Slider(
+                modifier = Modifier.weight(1f),
+                value = tickRateToPosition(tickRateMs),
+                onValueChange = { onEvent(SimulationEvent.SetTickRate(positionToTickRate(it))) },
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Size: $size")
+            Slider(
+                modifier = Modifier.weight(1f),
+                value = sizeIndex.toFloat(),
+                onValueChange = { sizeIndex = it.roundToInt() },
+                valueRange = 0f..GRID_SIZES.lastIndex.toFloat(),
+                steps = GRID_SIZES.size - 2,
+                enabled = !isRunning,
+            )
+        }
     }
 }
 
 @Composable
 private fun Stat(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, fontWeight = FontWeight.Bold)
         Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
     }
@@ -128,5 +154,14 @@ private fun GridCanvas(image: ImageBitmap, modifier: Modifier = Modifier) {
     }
 }
 
+private fun positionToTickRate(position: Float): Int =
+    (MIN_TICK_RATE_MS * (MAX_TICK_RATE_MS / MIN_TICK_RATE_MS).pow(position)).roundToInt()
+
+private fun tickRateToPosition(rateMs: Int): Float =
+    ln(rateMs / MIN_TICK_RATE_MS) / ln(MAX_TICK_RATE_MS / MIN_TICK_RATE_MS)
+
 private const val MIN_TICK_RATE_MS = 1f
 private const val MAX_TICK_RATE_MS = 1000f
+
+private val GRID_SIZES = listOf(16, 32, 64, 128, 256, 512, 1024, 2048)
+private const val DEFAULT_GRID_SIZE = 128

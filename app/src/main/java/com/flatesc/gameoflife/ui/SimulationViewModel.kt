@@ -41,17 +41,17 @@ class SimulationViewModel @Inject constructor(
 
     fun onEvent(event: SimulationEvent) {
         when (event) {
-            is SimulationEvent.Start -> start(event.seed)
+            is SimulationEvent.Start -> start(event.seed, event.size)
             SimulationEvent.Stop -> stop()
             is SimulationEvent.SetTickRate -> repository.setTickRate(event.rateMs)
         }
     }
 
-    private fun start(seed: String) {
+    private fun start(seed: String, size: Int) {
         simulation?.cancel()
         // default empty seed stabilizes around generation 1400
         // cool glider visible top of the screen at around generation 680
-        simulation = viewModelScope.launch { repository.run(seed) }
+        simulation = viewModelScope.launch { repository.run(seed, size) }
         _isRunning.value = true
     }
 
