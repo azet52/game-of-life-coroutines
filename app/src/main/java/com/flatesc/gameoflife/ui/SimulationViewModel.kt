@@ -66,5 +66,5 @@ private fun Grid.toImageBitmap(): ImageBitmap {
     return Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888).asImageBitmap()
 }
 
-private const val DEAD_COLOR = 0xFFFFFFF.toInt()
+private const val DEAD_COLOR = 0xFFFFFFFF.toInt()
 private const val ALIVE_COLOR = 0xFF101010.toInt()
