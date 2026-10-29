@@ -10,8 +10,10 @@ import com.flatesc.gameoflife.domain.model.Grid
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -30,6 +32,9 @@ class SimulationViewModel @Inject constructor(
 
     val stats: StateFlow<SimulationRepository.Stats> = repository.stats
 
+    private val _isRunning = MutableStateFlow(false)
+    val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
     private var simulation: Job? = null
 
     fun onEvent(event: SimulationEvent) {
@@ -44,10 +49,12 @@ class SimulationViewModel @Inject constructor(
         // default empty seed stabilizes around generation 1400
         // cool glider visible top of the screen at around generation 680
         simulation = viewModelScope.launch { repository.run(seed) }
+        _isRunning.value = true
     }
 
     private fun stop() {
         simulation?.cancel()
+        _isRunning.value = false
     }
 }
 
