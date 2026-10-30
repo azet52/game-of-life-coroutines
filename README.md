@@ -2,7 +2,14 @@
 
 Conway's Game of Life for Android, built as a producer-consumer problem with Kotlin coroutines.
 
-<img src="docs/screenshot.png" alt="App running" width="300">
+<details>
+<summary>Short demo videos</summary>
+
+https://github.com/user-attachments/assets/2a6ac1d1-3d5e-4bea-9a4f-3d511c089964
+
+https://github.com/user-attachments/assets/78211591-631f-4707-9c6b-6729b94fdbdd
+
+</details>
 
 ## Coroutines Aspects of Project
 #### **Producer**
