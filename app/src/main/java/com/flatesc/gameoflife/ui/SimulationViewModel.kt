@@ -13,10 +13,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,34 +31,37 @@ class SimulationViewModel @Inject constructor(
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val stats: StateFlow<SimulationRepository.Stats> = repository.stats
+    private val settings = MutableStateFlow(UiState())
 
-    val tickRateMs: StateFlow<Int> = repository.tickRateMs
-
-    private val _isRunning = MutableStateFlow(false)
-    val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+    val uiState: StateFlow<UiState> = combine(
+        settings, repository.stats, repository.tickRateMs,
+    ) { state, stats, rateMs ->
+        state.copy(stats = stats, tickRateMs = rateMs)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState())
 
     private var simulation: Job? = null
 
     fun onEvent(event: SimulationEvent) {
         when (event) {
-            is SimulationEvent.Start -> start(event.seed, event.size, event.parallelism)
-            SimulationEvent.Stop -> stop()
+            is SimulationEvent.SeedChanged -> settings.update { if (it.isRunning) it else it.copy(seed = event.seed) }
+            is SimulationEvent.SizeChanged -> settings.update { if (it.isRunning) it else it.copy(size = event.size) }
+            is SimulationEvent.ParallelismChanged -> settings.update { if (it.isRunning) it else it.copy(parallelism = event.parallelism) }
             is SimulationEvent.SetTickRate -> repository.setTickRate(event.rateMs)
+            SimulationEvent.Start -> start()
+            SimulationEvent.Stop -> stop()
         }
     }
 
-    private fun start(seed: String, size: Int, parallelism: Int) {
+    private fun start() {
         simulation?.cancel()
-        // default empty seed stabilizes around generation 1400
-        // cool glider visible top of the screen at around generation 680
-        simulation = viewModelScope.launch { repository.run(seed, size, parallelism) }
-        _isRunning.value = true
+        val state = settings.value
+        simulation = viewModelScope.launch { repository.run(state.seed, state.size, state.parallelism) }
+        settings.update { it.copy(isRunning = true) }
     }
 
     private fun stop() {
         simulation?.cancel()
-        _isRunning.value = false
+        settings.update { it.copy(isRunning = false) }
     }
 }
 
